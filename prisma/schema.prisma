@@ -1,0 +1,53 @@
+// prisma/schema.prisma
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id       Int      @id @default(autoincrement())
+  name     String
+  email    String   @unique
+  position String
+  division String
+  username String   @unique
+  password String
+  role     String   // HR or EMPLOYEE
+  attendances Attendance[]
+  leaves    Leave[]
+  salaries  Salary[]
+}
+
+model Attendance {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  date      DateTime
+  time      DateTime
+  location  String
+  status    String
+}
+
+model Leave {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  startDate  DateTime
+  endDate    DateTime
+  reason     String
+  status     String
+}
+
+model Salary {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  period     String
+  amount     Int
+  note       String
+}
