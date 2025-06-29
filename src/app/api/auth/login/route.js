@@ -4,8 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
-
-const JWT_SECRET = process.env.JWT_SECRET
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export async function POST(req) {
   const body = await req.json();
@@ -28,10 +27,6 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Invalid password.' }, { status: 401 });
   }
 
-  if (user.role !== 'HR') {
-    return NextResponse.json({ error: 'Access denied. Not HR.' }, { status: 403 });
-  }
-
   const token = jwt.sign(
     {
       id: user.id,
@@ -42,5 +37,13 @@ export async function POST(req) {
     { expiresIn: '1d' }
   );
 
-  return NextResponse.json({ token });
+  return NextResponse.json({
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      role: user.role,
+      username: user.username,
+    },
+  });
 }
