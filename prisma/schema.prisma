@@ -24,14 +24,16 @@ model User {
 }
 
 model Attendance {
-  id        Int      @id @default(autoincrement())
-  user      User     @relation(fields: [userId], references: [id])
-  userId    Int
-  date      DateTime
-  time      DateTime
-  location  String
-  status    String
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  date       DateTime
+  checkIn    DateTime?  
+  checkOut   DateTime? 
+  location   String
+  status     String
 }
+
 
 model Leave {
   id         Int      @id @default(autoincrement())

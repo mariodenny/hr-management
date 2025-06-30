@@ -25,3 +25,21 @@ export async function POST(req) {
 
   return NextResponse.json(leave)
 }
+
+export async function GET(req) {
+  const user = verifyToken(req.headers)
+
+  if (!user || user.role !== 'EMPLOYEE') {
+    return NextResponse.json(
+      { error: 'Forbidden' },
+      { status: 403 }
+    )
+  }
+
+  const leaves = await prisma.leave.findMany({
+    where: { userId: user.id },
+    orderBy: { startDate: 'desc' }
+  })
+
+  return NextResponse.json(leaves)
+}

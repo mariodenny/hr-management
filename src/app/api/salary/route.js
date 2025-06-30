@@ -24,3 +24,23 @@ export async function POST(req) {
 
   return NextResponse.json(salary)
 }
+
+export async function GET(req) {
+  const user = verifyToken(req.headers)
+
+  const salaries = await prisma.salary.findMany({
+    where: { userId: user.id },
+    orderBy: { period: 'desc' }
+  })
+
+  if (!salaries || salaries.length === 0) {
+    return NextResponse.json({
+      message: 'No salary records found',
+      salaries: []
+    })
+  }
+
+  return NextResponse.json(salaries)
+}
+
+
