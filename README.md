@@ -38,7 +38,7 @@ WORK_START_HOUR=8
 
 ## 🔑 **Auth**
 
-* Pakai JWT Bearer Token di header:
+- Pakai JWT Bearer Token di header:
 
   ```
   Authorization: Bearer <token>
@@ -227,6 +227,9 @@ npx prisma generate
 
 # Jalankan migration
 npx prisma migrate dev --name init
+
+# Jalankan seeder untuk data login HR
+npx prisma db seed 
 
 # Jalanin dev server
 npm run dev
