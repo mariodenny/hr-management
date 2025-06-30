@@ -1,0 +1,111 @@
+### ==========================
+### AUTHENTICATION
+### ==========================
+
+### HR Login
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "hradmin",
+  "password": "your_hr_password"
+}
+
+### Employee Login
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "employee1",
+  "password": "your_employee_password"
+}
+
+
+### ==========================
+### EMPLOYEE ENDPOINTS
+### ==========================
+
+### Get own salary list
+GET http://localhost:3000/api/salary/mine
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Get own salary by period
+GET http://localhost:3000/api/salary/mine?period=2025-06
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Get own leaves
+GET http://localhost:3000/api/leave
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Request new leave
+POST http://localhost:3000/api/leave
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+{
+  "startDate": "2025-07-01",
+  "endDate": "2025-07-05",
+  "reason": "Family vacation"
+}
+
+### Absen (Check In / Check Out)
+POST http://localhost:3000/api/attendance
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+{
+  "location": "Office"
+}
+
+
+### ==========================
+### HR ENDPOINTS
+### ==========================
+
+### Get all salaries
+GET http://localhost:3000/api/salary
+Authorization: Bearer YOUR_HR_TOKEN_HERE
+
+### Create salary for employee
+POST http://localhost:3000/api/salary
+Content-Type: application/json
+Authorization: Bearer YOUR_HR_TOKEN_HERE
+
+{
+  "userId": 1,
+  "amount": 5000000,
+  "period": "2025-06",
+  "note": "Gaji Bulan Juni"
+}
+
+### Get all leaves (manage)
+GET http://localhost:3000/api/leave/manage
+Authorization: Bearer YOUR_HR_TOKEN_HERE
+
+### Approve / Reject leave
+PATCH http://localhost:3000/api/leave/manage
+Content-Type: application/json
+Authorization: Bearer YOUR_HR_TOKEN_HERE
+
+{
+  "id": 1,
+  "status": "Approved"
+}
+
+### Add new employee
+POST http://localhost:3000/api/employee
+Content-Type: application/json
+Authorization: Bearer YOUR_HR_TOKEN_HERE
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "position": "Developer",
+  "division": "IT",
+  "username": "johndoe",
+  "password": "123456"
+}
+
+### Get all employees
+GET http://localhost:3000/api/employee
+Authorization: Bearer YOUR_HR_TOKEN_HERE
