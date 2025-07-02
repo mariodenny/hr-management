@@ -1,174 +1,190 @@
 'use client'
-
+import LeaveRequestTable from '../leave/table/leaveRequestTable';
+import LeaveRequestForm from '../leave/form/leaveRequestForm';
+import ProfilePage from '../profile/profile';
+import SalaryManager from '../salary/salaryManager';
+import EmployeeManager from '../employee/employeeManager';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link'
-import { Clock, Users, CalendarDays,Wallet, Briefcase, BookOpen, HandCoins, CheckCircle, Menu, X, Bell, Settings, LogOut, Home, BarChart3, UserCheck } from 'lucide-react';
+import { Clock, Users, CalendarDays, Wallet, Briefcase, BookOpen, HandCoins, CheckCircle, Menu, X, Bell, Settings, LogOut, Home, UserCheck, Leaf, Wallet2, IdCardLanyard } from 'lucide-react';
 
 export default function DashboardPage() {
-const [user, setUser] = useState(null)
-  const [data, setData] = useState({ attendance: [], leaves: [], salaries: [] })
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [activeNav, setActiveNav] = useState('dashboard')
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [hasCheckedInToday, setHasCheckedInToday] = useState(false)
-  const [attendanceStatus, setAttendanceStatus] = useState('');
+    const [user, setUser] = useState(null)
+    const [data, setData] = useState({ attendance: [], leaves: [], salaries: [] })
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState('')
+    const [activeNav, setActiveNav] = useState('dashboard')
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+    const [hasCheckedInToday, setHasCheckedInToday] = useState(false)
+    const [attendanceStatus, setAttendanceStatus] = useState('');
 
-  const API_BASE = 'http://localhost:3000/api'
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    const API_BASE = 'http://localhost:3000/api'
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
 
-  const fetchAPI = async (endpoint) => {
-    const res = await fetch(`${API_BASE}${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-    if (!res.ok) throw new Error(`Failed to fetch ${endpoint}`)
-    return await res.json()
-  }
+    const fetchAPI = async (endpoint) => {
+        const token = localStorage.getItem('token')
+        const res = await fetch(`${API_BASE}${endpoint}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) throw new Error(`Failed to fetch ${endpoint}`)
+        return await res.json()
+    }
 
-  useEffect(() => {
+
+    function calculateLeaveDuration(startDate, endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const diff = Math.abs(end - start);
+        return Math.ceil(diff / (1000 * 60 * 60 * 24));
+    }
     const fetchAttendanceToday = async () => {
-        try{
+        try {
             const token = localStorage.getItem('token')
             const res = await fetch('/api/attendance/today', {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
-             });
+            });
 
             const result = await res.json()
+            console.log(`Today fetchAttendanceToday Result : ${result}`);
 
-            if(!res.ok){
+
+            if (!res.ok) {
                 console.error(result.error)
                 return
             }
 
-           if (result.attendance) {
-            if (result.attendance?.checkIn && !result.attendance?.checkOut) {
-                setHasCheckedInToday(true);
+            if (result.attendance) {
+                if (result.attendance?.checkIn && !result.attendance?.checkOut) {
+                    setHasCheckedInToday(true);
                 } else {
-                setHasCheckedInToday(false);
+                    setHasCheckedInToday(false);
                 }
-                setAttendanceStatus(result.attendance.status); 
+                setAttendanceStatus(result.attendance.status);
             }
 
-        }catch(err){
+        } catch (err) {
             console.error(err);
         }
     };
-    fetchAttendanceToday()
-
-
     const loadData = async () => {
-      try {
-        const raw = localStorage.getItem('user')
-        const parsed = JSON.parse(raw)
-        if (!parsed) throw new Error('No user data in localStorage')
+        try {
+            const raw = localStorage.getItem('user')
+            const parsed = JSON.parse(raw)
+            if (!parsed) throw new Error('No user data in localStorage')
 
-        setUser(parsed)
+            setUser(parsed)
 
-        let result = {}
+            let result = {}
 
-        if (parsed.role === 'HR') {
-          const [employees, leaves, salaries] = await Promise.all([
-            fetchAPI('/employee'),
-            fetchAPI('/leave/manage'),
-            fetchAPI('/salary'),
-          ])
-          result = { employees, leaves, salaries }
-        } else {
-          const [attendance, leaves, salaries] = await Promise.all([
-            fetchAPI('/attendance'),
-            fetchAPI('/leave'),
-            fetchAPI('/salary/mine'),
-          ])
-          result = { attendance, leaves, salaries }
+            if (parsed.role === 'HR') {
+                const [employees, leaves, salaries] = await Promise.all([
+                    fetchAPI('/employee'),
+                    fetchAPI('/leave/manage'),
+                    fetchAPI('/salary'),
+                ])
+                result = { employees, leaves, salaries }
+            } else {
+                const [attendance, leaves, salaries] = await Promise.all([
+                    fetchAPI('/attendance'),
+                    fetchAPI('/leave'),
+                    fetchAPI('/salary/mine'),
+                ])
+                result = { attendance, leaves, salaries }
+            }
+
+            setData(result)
+        } catch (err) {
+            console.error(err)
+            setError(err.message)
+        } finally {
+            setLoading(false)
         }
-
-        setData(result)
-      } catch (err) {
-        console.error(err)
-        setError(err.message)
-      } finally {
-        setLoading(false)
-      }
     }
 
-    loadData()
-  }, [])
-
-const handleAttendance = () => {
-  if (!navigator.geolocation) {
-    alert('Geolocation is not supported by your browser.');
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      const { latitude, longitude } = position.coords;
-      const location = `${latitude},${longitude}`;
-
-      try {
-        const token = localStorage.getItem('token');
-
-        const res = await fetch('/api/attendance', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ location }),
-        });
-
-        const result = await res.json();
-
-        if (!res.ok) {
-          alert(result.error || 'Failed');
-          return;
+    const handleAttendance = () => {
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by your browser.');
+            return;
         }
 
-        if (result.attendance?.status) {
-         setAttendanceStatus(result.attendance.status);
-        }
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                const location = `${latitude},${longitude}`;
 
-        if (result.message.includes('Check-in')) {
-          setHasCheckedInToday(true);
-        } else if (result.message.includes('Check-out')) {
-          setHasCheckedInToday(false);
-        }
+                try {
+                    const token = localStorage.getItem('token');
 
-        alert(result.message);
-      } catch (err) {
-        console.error(err);
-        alert('Something went wrong');
-      }
-    },
-    (error) => {
-      console.error(error);
-      alert('Cannot get your location');
-    }
-  );
-};
+                    const res = await fetch('/api/attendance', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({ location }),
+                    });
+
+                    const result = await res.json();
+
+                    if (!res.ok) {
+                        alert(result.error || 'Failed');
+                        return;
+                    }
+
+                    if (result.attendance?.status) {
+                        setAttendanceStatus(result.attendance.status);
+                    }
+
+                    if (result.message.includes('Check-in')) {
+                        setHasCheckedInToday(true);
+                    } else if (result.message.includes('Check-out')) {
+                        setHasCheckedInToday(false);
+                    }
+
+                    alert(result.message);
+                } catch (err) {
+                    console.error(err);
+                    alert('Something went wrong');
+                }
+            },
+            (error) => {
+                console.error(error);
+                alert('Cannot get your location');
+            }
+        );
+    };
 
 
-  const handleLogout = async()=>{
+    const handleLogout = async () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login';
-  }
-  const formatCurrency = (amount) => new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(amount)
+    }
+    const formatCurrency = (amount) => new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+    }).format(amount)
 
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'attendance', label: 'Attendance', icon: UserCheck },
-    { id: 'reports', label: 'Reports', icon: BarChart3 },
-    // { id: 'profile', label:'Profile', icon : Home }
-  ]
+    const navItems = [
+        { id: 'dashboard', label: 'Dashboard', icon: Home },
+        { id: 'leaves', label: 'Leaves', icon: Leaf },
+        { id: 'salary', label: 'Salary', icon: Wallet2 },
+        { id: 'employee', label: 'Employee', icon: IdCardLanyard },
+        { id: 'profile', label: 'My Profile', icon: UserCheck },
+
+    ];
+
+    const filteredNavItems = navItems.filter(item => {
+        if (user?.role === 'HR') {
+            return ['dashboard', 'salary', 'employee', 'leaves'].includes(item.id);
+        } else {
+            return ['dashboard', 'profile', 'leaves'].includes(item.id);
+        }
+    });
+
 
     if (loading) {
         return (
@@ -198,8 +214,15 @@ const handleAttendance = () => {
         );
     }
 
+
+
+    useEffect(() => {
+        loadData()
+        fetchAttendanceToday()
+    }, [])
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
             {/* Top Navigation Bar */}
             <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -218,23 +241,23 @@ const handleAttendance = () => {
 
                         {/* Desktop Navigation */}
                         <div className="hidden md:flex items-center space-x-8">
-                            {navItems.map((item) => {
+                            {filteredNavItems.map((item) => {
                                 const Icon = item.icon;
                                 return (
                                     <button
                                         key={item.id}
                                         onClick={() => setActiveNav(item.id)}
-                                        className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 ${
-                                            activeNav === item.id
-                                                ? 'bg-blue-100 text-blue-700 shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                                        }`}
+                                        className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 ${activeNav === item.id
+                                            ? 'bg-blue-100 text-blue-700 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                            }`}
                                     >
                                         <Icon className="w-4 h-4 mr-2" />
                                         {item.label}
                                     </button>
                                 );
                             })}
+
                         </div>
 
                         {/* User Menu */}
@@ -283,7 +306,7 @@ const handleAttendance = () => {
             {mobileMenuOpen && (
                 <div className="md:hidden bg-white border-b border-gray-200">
                     <div className="px-4 py-2 space-y-1">
-                        {navItems.map((item) => {
+                        {filteredNavItems.map((item) => {
                             const Icon = item.icon;
                             return (
                                 <button
@@ -292,17 +315,17 @@ const handleAttendance = () => {
                                         setActiveNav(item.id);
                                         setMobileMenuOpen(false);
                                     }}
-                                    className={`flex items-center w-full px-3 py-2 rounded-md transition-colors ${
-                                        activeNav === item.id
-                                            ? 'bg-blue-50 text-blue-700'
-                                            : 'text-gray-600 hover:bg-gray-50'
-                                    }`}
+                                    className={`flex items-center w-full px-3 py-2 rounded-md transition-colors ${activeNav === item.id
+                                        ? 'bg-blue-50 text-blue-700'
+                                        : 'text-gray-600 hover:bg-gray-50'
+                                        }`}
                                 >
                                     <Icon className="w-4 h-4 mr-3" />
                                     {item.label}
                                 </button>
                             );
                         })}
+
                     </div>
                 </div>
             )}
@@ -322,26 +345,25 @@ const handleAttendance = () => {
                                 </p>
                                 <div className="flex items-center mt-3 text-sm text-gray-500">
                                     <Clock className="w-4 h-4 mr-2" />
-                                    {new Date().toLocaleDateString('en-US', { 
-                                        weekday: 'long', 
-                                        year: 'numeric', 
-                                        month: 'long', 
-                                        day: 'numeric' 
+                                    {new Date().toLocaleDateString('en-US', {
+                                        weekday: 'long',
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
                                     })}
                                 </div>
                             </div>
-                            
+
                             {user?.role === 'EMPLOYEE' && (
                                 <div className="flex flex-col items-center lg:items-end">
                                     <button
                                         onClick={handleAttendance}
-                                        className={`group relative px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ${
-                                        hasCheckedInToday
-                                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-                                        : attendanceStatus === 'LATE'
-                                        ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white'
-                                        : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700'
-                                        }`}>
+                                        className={`group relative px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ${hasCheckedInToday
+                                            ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
+                                            : attendanceStatus === 'LATE'
+                                                ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white'
+                                                : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700'
+                                            }`}>
                                         <div className="flex items-center">
                                             {hasCheckedInToday ? (
                                                 <>
@@ -359,8 +381,8 @@ const handleAttendance = () => {
                                     </button>
                                     <p className={`text-lg mt-2 ${attendanceStatus === 'LATE' ? 'text-red-500' : 'text-gray-500'}`}>
                                         {hasCheckedInToday
-                                        ? `You checked in today : ${attendanceStatus.toLowerCase()}`
-                                        : 'Tap to mark your attendance'}
+                                            ? `You checked in today : ${attendanceStatus.toLowerCase()}`
+                                            : 'Tap to mark your attendance'}
                                     </p>
                                 </div>
                             )}
@@ -410,33 +432,45 @@ const handleAttendance = () => {
 
                         {/* Main Dashboard Cards */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-                            {/* Attendance Card */}
                             <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-sm border border-white/50 overflow-hidden hover:shadow-md transition-shadow duration-300">
-                                <div className="p-6">
-                                    <div className="flex items-center justify-between mb-6">
-                                        <h3 className="text-xl font-semibold text-gray-900">Recent Attendance</h3>
-                                        <div className="p-2 bg-blue-100 rounded-lg">
-                                            <Clock className="w-5 h-5 text-blue-600" />
-                                        </div>
+                                {/* ======= SECTION HEADER ======= */}
+                                <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                                    <h3 className="text-xl font-semibold text-gray-900">Recent Attendance</h3>
+                                    <div className="p-2 bg-blue-100 rounded-lg">
+                                        <Clock className="w-5 h-5 text-blue-600" />
                                     </div>
-                                    <div className="space-y-4">
-                                        {data.attendance?.slice(0, 3).map((record) => (
-                                            <div key={record.id} className="flex items-center p-4 bg-gray-50/50 rounded-xl border border-gray-100/50 hover:bg-gray-100/50 transition-colors">
+                                </div>
+
+                                {/* ======= LIST BODY ======= */}
+                                <div className="divide-y divide-gray-200">
+                                    {data.attendance?.length > 0 ? (
+                                        data.attendance.slice(0, 3).map((record) => (
+                                            <div
+                                                key={record.id}
+                                                className="flex items-center px-6 py-4 hover:bg-gray-50/50 transition-colors"
+                                            >
                                                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
                                                     <CalendarDays className="w-5 h-5 text-blue-600" />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <p className="font-medium text-gray-900">{record.date}</p>
+                                                    <p className="font-medium text-gray-900">
+                                                        {record.date.substring(0, 19).replace('T', ' ')}
+                                                    </p>
                                                     <p className="text-sm text-gray-600">
-                                                        {record.checkInTime} - {record.checkOutTime || 'Active'}
+                                                        {record.checkIn.substring(0, 19).replace('T', ' ')}
+                                                        {' - '}
+                                                        {record.checkOut ? record.checkOut.substring(0, 19).replace('T', ' ') : 'Active'}
                                                     </p>
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
+                                        ))
+                                    ) : (
+                                        <div className="px-6 py-4 text-gray-500 text-sm">
+                                            No attendance records found.
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-
                             {/* Leave Requests */}
                             <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-sm border border-white/50 overflow-hidden hover:shadow-md transition-shadow duration-300">
                                 <div className="p-6">
@@ -452,17 +486,26 @@ const handleAttendance = () => {
                                                 <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mr-4">
                                                     <CalendarDays className="w-5 h-5 text-orange-600" />
                                                 </div>
-                                                <div className="flex-1">
-                                                    <p className="font-medium text-gray-900">
-                                                        {leave.startDate} - {leave.endDate}
-                                                    </p>
-                                                    <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                                                        leave.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                                                        leave.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                                                        'bg-red-100 text-red-800'
-                                                    }`}>
-                                                        {leave.status}
-                                                    </span>
+                                                <div className="flex-2">
+                                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                        <div className="flex items-center text-sm text-gray-600">
+                                                            <span className=" text-gray-900">
+                                                                {new Date(leave.startDate).toLocaleDateString()} – {new Date(leave.endDate).toLocaleDateString()}
+                                                            </span>
+                                                            <span className="text-gray-400 text-xs">({calculateLeaveDuration(leave.startDate, leave.endDate)} days)</span>
+                                                        </div>
+                                                        <span
+                                                            className={`inline-flex py-1 rounded-full text-xs font-medium ${leave.status === 'APPROVED'
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : leave.status === 'PENDING'
+                                                                    ? 'bg-yellow-100 text-yellow-800'
+                                                                    : 'bg-red-100 text-red-800'
+                                                                }`}
+                                                        >
+                                                            {leave.status}
+                                                        </span>
+                                                    </div>
+
                                                 </div>
                                             </div>
                                         ))}
@@ -480,7 +523,7 @@ const handleAttendance = () => {
                                         </div>
                                     </div>
                                     <div className="space-y-4">
-                                        {data.salaries?.slice(0, 3).map((salary) => (
+                                        {(Array.isArray(data?.salaries) ? data.salaries : []).slice(0, 3).map((salary) => (
                                             <div key={salary.id} className="flex items-center p-4 bg-gray-50/50 rounded-xl border border-gray-100/50 hover:bg-gray-100/50 transition-colors">
                                                 <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-4">
                                                     <HandCoins className="w-5 h-5 text-green-600" />
@@ -501,19 +544,25 @@ const handleAttendance = () => {
                 )}
 
                 {/* Other Navigation Content */}
-                {activeNav === 'attendance' && (
-                    <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-sm border border-white/50 p-8 text-center">
-                        <UserCheck className="w-16 h-16 text-blue-500 mx-auto mb-4" />
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Attendance Management</h2>
-                        <p className="text-gray-600">Detailed attendance tracking and management features coming soon.</p>
+                {activeNav === 'profile' && (
+                    <div className="space-y-8">
+                        <ProfilePage />
                     </div>
                 )}
 
-                {activeNav === 'reports' && (
-                    <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-sm border border-white/50 p-8 text-center">
-                        <BarChart3 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Reports & Analytics</h2>
-                        <p className="text-gray-600">Comprehensive reporting and analytics dashboard coming soon.</p>
+                {activeNav === 'leaves' && (
+                    <div className="space-y-8">
+                        <LeaveRequestForm />
+                    </div>
+                )}
+                {activeNav === 'salary' && (
+                    <div className="space-y-8">
+                        <SalaryManager />
+                    </div>
+                )}
+                {activeNav === 'employee' && (
+                    <div className="space-y-8">
+                        <EmployeeManager />
                     </div>
                 )}
             </main>

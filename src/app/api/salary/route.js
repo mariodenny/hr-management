@@ -27,11 +27,19 @@ export async function POST(req) {
 
 export async function GET(req) {
   const user = verifyToken(req.headers)
+  if (!user || user.role !== 'HR') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const salaries = await prisma.salary.findMany({
-    where: { userId: user.id },
-    orderBy: { period: 'desc' }
+    orderBy: { period: 'asc' },
+    include: {
+      user: {
+        select: {
+          name: true
+        }
+      }
+    }
   })
+
 
   if (!salaries || salaries.length === 0) {
     return NextResponse.json({

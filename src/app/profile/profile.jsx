@@ -82,38 +82,28 @@ export default function ProfilePage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-8">
-      <div className="max-w-4xl mx-auto bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">👤 My Profile</h1>
+      <div className="max-w-4xl mx-auto bg-white/70 backdrop-blur-md rounded-2xl shadow-lg border border-slate-200 p-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">👤 My Profile</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 mb-8">
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-gray-500">Name</span>
-            <span className="text-lg text-gray-900 font-semibold">{profile.name}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-gray-500">Email</span>
-            <span className="text-lg text-gray-900">{profile.email}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-gray-500">Position</span>
-            <span className="text-lg text-gray-900">{profile.position}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-gray-500">Division</span>
-            <span className="text-lg text-gray-900">{profile.division}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-gray-500">Username</span>
-            <span className="text-lg text-gray-900">{profile.username}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-gray-500">Role</span>
-            <span className="text-lg text-gray-900">{profile.role}</span>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+          {[
+            ['Name', profile.name],
+            ['Email', profile.email],
+            ['Position', profile.position],
+            ['Division', profile.division],
+            ['Username', profile.username],
+            ['Role', profile.role],
+          ].map(([label, value]) => (
+            <div key={label} className="flex flex-col">
+              <span className="text-xs font-medium text-gray-500">{label}</span>
+              <span className="text-base text-gray-900 font-semibold">{value}</span>
+            </div>
+          ))}
         </div>
 
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">🔒 Change Password</h2>
-        <form onSubmit={handlePasswordUpdate} className="space-y-4">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">🔒 Change Password</h2>
+
+        <form onSubmit={handlePasswordUpdate} className="space-y-6">
           <div>
             <label htmlFor="oldPassword" className="block text-sm font-medium text-gray-700 mb-1">
               Old Password
@@ -125,7 +115,7 @@ export default function ProfilePage() {
               onChange={(e) => setOldPassword(e.target.value)}
               required
               placeholder="Enter old password"
-              className="w-full border border-gray-300 rounded-lg shadow-sm px-4 py-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 shadow-sm focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
           <div>
@@ -139,20 +129,22 @@ export default function ProfilePage() {
               onChange={(e) => setNewPassword(e.target.value)}
               required
               placeholder="Enter new password"
-              className="w-full border border-gray-300 rounded-lg shadow-sm px-4 py-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 shadow-sm focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
           {message && (
-            <p className={`text-sm ${message.includes('success') ? 'text-green-600' : 'text-red-600'} mt-2`}>
+            <p className={`text-sm ${message.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
               {message}
             </p>
           )}
-          <button
-            type="submit"
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg"
-          >
-            Update Password
-          </button>
+          <div>
+            <button
+              type="submit"
+              className="inline-block w-full md:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow transition-colors"
+            >
+              Update Password
+            </button>
+          </div>
         </form>
       </div>
     </main>
