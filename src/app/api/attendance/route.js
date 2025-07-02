@@ -4,6 +4,18 @@ import { verifyToken } from '@/lib/auth'
 
 const prisma = new PrismaClient()
 
+export async function GET(req) {
+  const user = verifyToken(req.headers)
+  
+  const attendances = await prisma.attendance.findMany({
+    include: { user: true },
+    orderBy: { date: 'desc' },
+    where:{userId: user.id}
+  })
+
+  return NextResponse.json(attendances)
+}
+
 export async function POST(req) {
   const user = verifyToken(req.headers)
 
