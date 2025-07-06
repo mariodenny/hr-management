@@ -29,17 +29,29 @@ export async function POST(req) {
 export async function GET(req) {
   const user = verifyToken(req.headers)
 
-  if (!user || user.role !== 'EMPLOYEE') {
-    return NextResponse.json(
-      { error: 'Forbidden' },
-      { status: 403 }
-    )
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const leaves = await prisma.leave.findMany({
-    where: { userId: user.id },
-    orderBy: { startDate: 'desc' }
-  })
+  let leaves = []
+
+  if (user.role === 'HR') {
+    leaves = await prisma.leave.findMany({
+      orderBy: { startDate: 'desc' },
+      include: {
+        user: {
+          select: { name: true, position: true }
+        }
+      }
+    })
+  } else if (user.role === 'EMPLOYEE') {
+    leaves = await prisma.leave.findMany({
+      where: { userId: user.id },
+      orderBy: { startDate: 'desc' }
+    })
+  } else {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   return NextResponse.json(leaves)
 }

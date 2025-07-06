@@ -1,12 +1,14 @@
 'use client'
 import LeaveRequestTable from '../leave/table/leaveRequestTable';
+import Swal from 'sweetalert2';
 import LeaveRequestForm from '../leave/form/leaveRequestForm';
 import ProfilePage from '../profile/profile';
 import SalaryManager from '../salary/salaryManager';
 import EmployeeManager from '../employee/employeeManager';
+import AttendanceManager from '../attendance/attendance';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link'
-import { Clock, Users, CalendarDays, Wallet, Briefcase, BookOpen, HandCoins, CheckCircle, Menu, X, Bell, Settings, LogOut, Home, UserCheck, Leaf, Wallet2, IdCardLanyard } from 'lucide-react';
+import { Clock, Users, CalendarDays, Wallet, Briefcase, BookOpen, HandCoins, CheckCircle, Menu, X, Bell, Settings, LogOut, Home, UserCheck, Leaf, Wallet2, IdCardLanyard, CalendarCheck2 } from 'lucide-react';
 
 export default function DashboardPage() {
     const [user, setUser] = useState(null)
@@ -105,7 +107,11 @@ export default function DashboardPage() {
 
     const handleAttendance = () => {
         if (!navigator.geolocation) {
-            alert('Geolocation is not supported by your browser.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'Geolocation is not supported by your browser.',
+            });
             return;
         }
 
@@ -116,6 +122,14 @@ export default function DashboardPage() {
 
                 try {
                     const token = localStorage.getItem('token');
+                    if (!token) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Belum Login',
+                            text: 'Anda belum login. Silakan login terlebih dahulu.',
+                        });
+                        return;
+                    }
 
                     const res = await fetch('/api/attendance', {
                         method: 'POST',
@@ -129,7 +143,11 @@ export default function DashboardPage() {
                     const result = await res.json();
 
                     if (!res.ok) {
-                        alert(result.error || 'Failed');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: result.error || 'Gagal mencatat absensi.',
+                        });
                         return;
                     }
 
@@ -137,21 +155,34 @@ export default function DashboardPage() {
                         setAttendanceStatus(result.attendance.status);
                     }
 
-                    if (result.message.includes('Check-in')) {
+                    if (result.message?.includes('Check-in')) {
                         setHasCheckedInToday(true);
-                    } else if (result.message.includes('Check-out')) {
+                    } else if (result.message?.includes('Check-out')) {
                         setHasCheckedInToday(false);
                     }
 
-                    alert(result.message);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: result.message || 'Success',
+                    });
+
                 } catch (err) {
                     console.error(err);
-                    alert('Something went wrong');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: 'Something went wrong!',
+                    });
                 }
             },
             (error) => {
                 console.error(error);
-                alert('Cannot get your location');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Location Error',
+                    text: 'Something went wrong when getting the location!',
+                });
             }
         );
     };
@@ -174,14 +205,15 @@ export default function DashboardPage() {
         { id: 'salary', label: 'Salary', icon: Wallet2 },
         { id: 'employee', label: 'Employee', icon: IdCardLanyard },
         { id: 'profile', label: 'My Profile', icon: UserCheck },
+        { id: 'attendance', label: 'Attendance', icon: CalendarCheck2 }
 
     ];
 
     const filteredNavItems = navItems.filter(item => {
         if (user?.role === 'HR') {
-            return ['dashboard', 'salary', 'employee', 'leaves'].includes(item.id);
+            return ['dashboard', 'salary', 'employee', 'leaves', 'attendance'].includes(item.id);
         } else {
-            return ['dashboard', 'profile', 'leaves'].includes(item.id);
+            return ['dashboard', 'profile', 'leaves', 'salary'].includes(item.id);
         }
     });
 
@@ -222,7 +254,8 @@ export default function DashboardPage() {
     }, [])
 
     return (
-        <div className="w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="w-full min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+
             {/* Top Navigation Bar */}
             <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -268,16 +301,6 @@ export default function DashboardPage() {
                             <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
                                 <Settings className="w-5 h-5" />
                             </button>
-                            {/* <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-                                    <span className="text-white text-sm font-medium">
-                                        {user?.name?.charAt(0) || 'U'}
-                                    </span>
-                                </div>
-                                <span className="hidden sm:block text-sm font-medium text-gray-800">
-                                    {user?.name}
-                                </span>
-                            </div> */}
                             <Link href="/profile" className="flex items-center space-x-3 cursor-pointer">
                                 <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
                                     <span className="text-white text-sm font-medium">
@@ -331,7 +354,7 @@ export default function DashboardPage() {
             )}
 
             {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Welcome Section with Attendance Button */}
                 <div className="mb-8">
                     <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-sm border border-white/50 p-8">
@@ -441,7 +464,6 @@ export default function DashboardPage() {
                                     </div>
                                 </div>
 
-                                {/* ======= LIST BODY ======= */}
                                 <div className="divide-y divide-gray-200">
                                     {data.attendance?.length > 0 ? (
                                         data.attendance.slice(0, 3).map((record) => (
@@ -545,26 +567,35 @@ export default function DashboardPage() {
 
                 {/* Other Navigation Content */}
                 {activeNav === 'profile' && (
-                    <div className="space-y-8">
+                    <div className="flex flex-col flex-grow space-y-8">
                         <ProfilePage />
                     </div>
                 )}
 
                 {activeNav === 'leaves' && (
-                    <div className="space-y-8">
+                    <div className="flex flex-col flex-grow space-y-8">
                         <LeaveRequestForm />
                     </div>
                 )}
+
                 {activeNav === 'salary' && (
-                    <div className="space-y-8">
+                    <div className="flex flex-col flex-grow space-y-8">
                         <SalaryManager />
                     </div>
                 )}
+
                 {activeNav === 'employee' && (
-                    <div className="space-y-8">
+                    <div className="flex flex-col flex-grow space-y-8">
                         <EmployeeManager />
                     </div>
                 )}
+
+                {activeNav === 'attendance' && (
+                    <div className="flex flex-col flex-grow space-y-8">
+                        <AttendanceManager />
+                    </div>
+                )}
+
             </main>
         </div>
     );

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import LeaveRequestTable from '../table/leaveRequestTable';
+import Swal from 'sweetalert2';
 
 export default function LeaveRequestForm() {
     const [requests, setRequests] = useState([]);
@@ -10,24 +11,22 @@ export default function LeaveRequestForm() {
     const [endDate, setEndDate] = useState('');
     const [reason, setReason] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showForm, setShowForm] = useState(false);
 
     const API_BASE = 'http://localhost:3000/api';
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
     useEffect(() => {
-        // Ambil user role
         const user = JSON.parse(localStorage.getItem('user'));
         if (user) {
             setRole(user.role);
-            if (user.role === 'HR') {
-                fetchAllRequests();
-            }
+            fetchRequests();
         }
     }, []);
 
-    const fetchAllRequests = async () => {
+    const fetchRequests = async () => {
         try {
-            const res = await fetch(`${API_BASE}/leave/manage`, {
+            const res = await fetch(`${API_BASE}/leave`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             const data = await res.json();
@@ -40,7 +39,10 @@ export default function LeaveRequestForm() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!startDate || !endDate || !reason) {
-            alert('Please fill all fields!');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Please fill all fields!',
+            });
             return;
         }
 
@@ -62,29 +64,59 @@ export default function LeaveRequestForm() {
             const result = await res.json();
 
             if (!res.ok) {
-                alert(result.error || 'Failed to create leave request.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Failed',
+                    text: result.error || 'Failed to create leave request.',
+                });
                 return;
             }
 
-            alert('Leave request submitted!');
+            Swal.fire({
+                icon: 'success',
+                title: 'Leave request submitted!',
+            });
+
             // Reset form
             setStartDate('');
             setEndDate('');
             setReason('');
+            setShowForm(false);
+
+            // Refresh table
+            fetchRequests();
 
         } catch (err) {
             console.error(err);
-            alert('Error submitting leave.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error submitting leave.',
+            });
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-6 text-gray-800 text-md">
+        <div className="w-full mx-auto p-6 text-gray-800 text-md">
             <h1 className="text-2xl font-bold text-black mb-6">Leave Request</h1>
 
             {role === 'EMPLOYEE' && (
+                <div className="mb-4">
+                    <button
+                        onClick={() => setShowForm(!showForm)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                        {showForm ? 'Hide Form' : 'Add Leave Request'}
+                    </button>
+                </div>
+            )}
+
+            {role === 'EMPLOYEE' && !showForm && (
+                <LeaveRequestTable requests={requests} />
+            )}
+
+            {role === 'EMPLOYEE' && showForm && (
                 <form onSubmit={handleSubmit} className="space-y-4 mb-8 bg-white p-6 rounded-lg shadow">
                     <div>
                         <label className="block text-sm font-medium mb-1">Start Date</label>
@@ -122,7 +154,7 @@ export default function LeaveRequestForm() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
                     >
                         {loading ? 'Submitting...' : 'Submit Leave Request'}
                     </button>
@@ -130,7 +162,11 @@ export default function LeaveRequestForm() {
             )}
 
             {role === 'HR' && (
-                <LeaveRequestTable requests={requests} />
+                <LeaveRequestTable
+                    requests={requests}
+                    onStatusUpdate={fetchRequests}
+                    role={role}
+                />
             )}
         </div>
     );

@@ -1,25 +1,25 @@
-'use client';
-import { useState } from 'react';
-import { format } from 'date-fns';
-import { Calendar, Clock, User, FileText, Check, X } from 'lucide-react';
+'use client'
+import { useState } from 'react'
+import { format } from 'date-fns'
+import { Calendar, User, FileText, Check, X } from 'lucide-react'
 
-export default function LeaveRequestTable({ requests, onStatusUpdate }) {
-    const [loadingId, setLoadingId] = useState(null);
+export default function LeaveRequestTable({ requests, onStatusUpdate, role }) {
+    const [loadingId, setLoadingId] = useState(null)
 
     const getStatusColor = (status) => {
         switch (status) {
             case 'ACCEPTED':
-                return 'bg-green-100 text-green-800';
+                return 'bg-green-100 text-green-800'
             case 'REJECTED':
-                return 'bg-red-100 text-red-800';
+                return 'bg-red-100 text-red-800'
             case 'PENDING':
             default:
-                return 'bg-yellow-100 text-yellow-800';
+                return 'bg-yellow-100 text-yellow-800'
         }
-    };
+    }
 
     const handleStatusChange = async (id, newStatus) => {
-        setLoadingId(id);
+        setLoadingId(id)
         try {
             const res = await fetch('http://localhost:3000/api/leave/manage', {
                 method: 'PATCH',
@@ -27,46 +27,54 @@ export default function LeaveRequestTable({ requests, onStatusUpdate }) {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: JSON.stringify({
-                    id,
-                    status: newStatus,
-                }),
-            });
+                body: JSON.stringify({ id, status: newStatus }),
+            })
 
-            const result = await res.json();
+            const result = await res.json()
             if (!res.ok) {
-                alert(result.error || 'Failed to update status');
-                return;
+                alert(result.error || 'Failed to update status')
+                return
             }
 
-            alert(`Status updated to ${newStatus}`);
-            if (onStatusUpdate) onStatusUpdate(id, newStatus);
+            alert(`Status updated to ${newStatus}`)
+            if (onStatusUpdate) onStatusUpdate(id, newStatus)
         } catch (err) {
-            console.error(err);
-            alert('Something went wrong');
+            console.error(err)
+            alert('Something went wrong')
         } finally {
-            setLoadingId(null);
+            setLoadingId(null)
         }
-    };
+    }
 
     return (
-        <div className="w-full bg-white shadow rounded-lg overflow-hidden">
-            <div className="border-b px-6 py-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-gray-900" />
-                <h2 className="text-lg font-semibold text-gray-800">Leave Requests Overview</h2>
-            </div>
-
+        <div className="w-full bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border  p-8">
             <div className="w-full overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="min-w-[768px] text-left border-collapse">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-6 py-3 text-sm font-medium text-gray-600 border-b">Employee</th>
-                            <th className="px-6 py-3 text-sm font-medium text-gray-600 border-b">Start Date</th>
-                            <th className="px-6 py-3 text-sm font-medium text-gray-600 border-b">End Date</th>
-                            <th className="px-6 py-3 text-sm font-medium text-gray-600 border-b">Duration</th>
-                            <th className="px-6 py-3 text-sm font-medium text-gray-600 border-b">Status</th>
-                            <th className="px-6 py-3 text-sm font-medium text-gray-600 border-b">Reason</th>
-                            <th className="px-6 py-3 text-sm font-medium text-gray-600 border-b">Action</th>
+                            <th className="px-6 py-3 text-xs font-medium text-gray-600 uppercase border-b">
+                                Employee
+                            </th>
+                            <th className="px-6 py-3 text-xs font-medium text-gray-600 uppercase border-b">
+                                Start Date
+                            </th>
+                            <th className="px-6 py-3 text-xs font-medium text-gray-600 uppercase border-b">
+                                End Date
+                            </th>
+                            <th className="px-6 py-3 text-xs font-medium text-gray-600 uppercase border-b">
+                                Duration
+                            </th>
+                            <th className="px-6 py-3 text-xs font-medium text-gray-600 uppercase border-b">
+                                Status
+                            </th>
+                            <th className="px-6 py-3 text-xs font-medium text-gray-600 uppercase border-b">
+                                Reason
+                            </th>
+                            {role === 'HR' && (
+                                <th className="px-6 py-3 text-xs font-medium text-gray-600 uppercase border-b">
+                                    Action
+                                </th>
+                            )}
                         </tr>
                     </thead>
                     <tbody>
@@ -75,7 +83,7 @@ export default function LeaveRequestTable({ requests, onStatusUpdate }) {
                                 Math.ceil(
                                     (new Date(request.endDate) - new Date(request.startDate)) /
                                     (1000 * 60 * 60 * 24)
-                                ) + 1;
+                                )
 
                             return (
                                 <tr
@@ -117,34 +125,40 @@ export default function LeaveRequestTable({ requests, onStatusUpdate }) {
                                     <td className="px-6 py-4 max-w-xs text-sm text-gray-700 truncate">
                                         {request.reason}
                                     </td>
-                                    <td className="px-6 py-4">
-                                        {request.status === 'PENDING' ? (
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => handleStatusChange(request.id, 'ACCEPTED')}
-                                                    disabled={loadingId === request.id}
-                                                    className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
-                                                >
-                                                    <Check className="w-4 h-4 inline mr-1" /> Accept
-                                                </button>
-                                                <button
-                                                    onClick={() => handleStatusChange(request.id, 'REJECTED')}
-                                                    disabled={loadingId === request.id}
-                                                    className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
-                                                >
-                                                    <X className="w-4 h-4 inline mr-1" /> Reject
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <span className="text-xs text-gray-500 italic">-</span>
-                                        )}
-                                    </td>
+                                    {role === 'HR' && (
+                                        <td className="px-6 py-4">
+                                            {request.status === 'PENDING' ? (
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() =>
+                                                            handleStatusChange(request.id, 'ACCEPTED')
+                                                        }
+                                                        disabled={loadingId === request.id}
+                                                        className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                                                    >
+                                                        <Check className="w-4 h-4 inline mr-1" /> Accept
+                                                    </button>
+                                                    <button
+                                                        onClick={() =>
+                                                            handleStatusChange(request.id, 'REJECTED')
+                                                        }
+                                                        disabled={loadingId === request.id}
+                                                        className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                                                    >
+                                                        <X className="w-4 h-4 inline mr-1" /> Reject
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-gray-500 italic">-</span>
+                                            )}
+                                        </td>
+                                    )}
                                 </tr>
-                            );
+                            )
                         })}
                     </tbody>
                 </table>
             </div>
         </div>
-    );
+    )
 }

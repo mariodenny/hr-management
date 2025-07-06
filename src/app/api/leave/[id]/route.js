@@ -4,26 +4,22 @@ import { verifyToken } from '@/lib/auth'
 
 const prisma = new PrismaClient()
 
-export async function GET(req, { params }) {
+export async function GET(req) {
   const user = verifyToken(req.headers)
 
   if (!user || user.role !== 'EMPLOYEE') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const { id } = params
-
-  const leave = await prisma.leave.findUnique({
-    where: { id: parseInt(id) },
+  const leaves = await prisma.leave.findMany({
+    where: { userId: user.id },
+    include: {
+      user: {
+        select: { name: true, position: true }
+      }
+    },
+    orderBy: { startDate: 'desc' }
   })
 
-  if (!leave) {
-    return NextResponse.json({ error: 'Leave not found' }, { status: 404 })
-  }
-
-  if (leave.userId !== user.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
-  }
-
-  return NextResponse.json(leave)
+  return NextResponse.json(leaves)
 }

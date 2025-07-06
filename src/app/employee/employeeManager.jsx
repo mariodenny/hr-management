@@ -88,7 +88,7 @@ export default function EmployeeManager() {
     }
 
     return (
-        <div className="p-6 bg-white rounded-xl shadow border text-black">
+        <div className="w-full p-6 bg-white rounded-xl shadow border text-black">
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                     <Users className="w-5 h-5" /> Manage Employees
@@ -101,8 +101,8 @@ export default function EmployeeManager() {
                 </button>
             </div>
 
-            <div className="overflow-x-auto">
-                <table className="min-w-full border">
+            <div className="w-full overflow-x-auto">
+                <table className="min-w-[768px] sm:min-w-full border">
                     <thead className="bg-gray-50">
                         <tr>
                             <th className="px-4 py-2 text-left">Name</th>

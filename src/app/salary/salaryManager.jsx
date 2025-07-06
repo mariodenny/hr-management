@@ -1,15 +1,28 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Wallet, Plus } from 'lucide-react'
+import Swal from 'sweetalert2'
 
 export default function SalaryManager() {
     const [salaries, setSalaries] = useState([])
     const [form, setForm] = useState({ userId: '', period: '', amount: '' })
-    const [employees, setEmployees] = useState([]);
-
+    const [employees, setEmployees] = useState([])
     const [showModal, setShowModal] = useState(false)
+    const [role, setRole] = useState('')
 
-    const token = localStorage.getItem('token')
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : ''
+
+    // Decode JWT role
+    useEffect(() => {
+        if (token) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]))
+                setRole(payload.role)
+            } catch (e) {
+                console.error('Failed to decode token:', e)
+            }
+        }
+    }, [token])
 
     const fetchSalaries = async () => {
         const res = await fetch('/api/salary', {
@@ -21,7 +34,7 @@ export default function SalaryManager() {
 
     useEffect(() => {
         fetchSalaries()
-        if (showModal) {
+        if (showModal && role === 'HR') {
             fetch('/api/employee', {
                 headers: { Authorization: `Bearer ${token}` },
             })
@@ -29,7 +42,7 @@ export default function SalaryManager() {
                 .then(data => setEmployees(data || []))
                 .catch(err => console.error(err));
         }
-    }, [showModal])
+    }, [showModal, role])
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -42,21 +55,39 @@ export default function SalaryManager() {
             fetchSalaries()
             setShowModal(false)
             setForm({ userId: '', period: '', amount: '' })
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Salary added!',
+                text: 'The salary record has been successfully added.',
+                timer: 2000,
+                showConfirmButton: false
+            })
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Failed!',
+                text: 'Something went wrong while adding salary.',
+                timer: 2000,
+                showConfirmButton: false
+            })
         }
     }
 
     return (
-        <div className="p-6 bg-white rounded-xl shadow border text-gray-900">
+        <div className="w-full p-6 bg-white rounded-xl shadow border text-gray-900">
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                     <Wallet className="w-5 h-5" /> Manage Salaries
                 </h2>
-                <button
-                    onClick={() => setShowModal(true)}
-                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-2"
-                >
-                    <Plus className="w-4 h-4" /> Add Salary
-                </button>
+                {role === 'HR' && (
+                    <button
+                        onClick={() => setShowModal(true)}
+                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-2"
+                    >
+                        <Plus className="w-4 h-4" /> Add Salary
+                    </button>
+                )}
             </div>
 
             <div className="overflow-x-auto">
@@ -69,13 +100,19 @@ export default function SalaryManager() {
                         </tr>
                     </thead>
                     <tbody>
-                        {salaries.map((sal) => (
-                            <tr key={sal.id} className="border-t hover:bg-gray-50">
-                                <td className="px-4 py-2">{sal.user?.name}</td>
-                                <td className="px-4 py-2">{sal.period}</td>
-                                <td className="px-4 py-2">Rp {sal.amount.toLocaleString('id-ID')}</td>
+                        {salaries && salaries.length > 0 ? (
+                            salaries.map((sal) => (
+                                <tr key={sal.id} className="border-t hover:bg-gray-50">
+                                    <td className="px-4 py-2">{sal.user ? sal.user.name : 'You'}</td>
+                                    <td className="px-4 py-2">{sal.period}</td>
+                                    <td className="px-4 py-2">Rp {sal.amount.toLocaleString('id-ID')}</td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan="3" className="px-4 py-2 text-center">No salaries found</td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
             </div>
@@ -135,7 +172,6 @@ export default function SalaryManager() {
                     </div>
                 </div>
             )}
-
         </div>
     )
 }
