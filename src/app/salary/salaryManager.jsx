@@ -1,11 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Wallet, Plus } from 'lucide-react'
-import Swal from 'sweetalert2'
 
 export default function SalaryManager() {
     const [salaries, setSalaries] = useState([])
-    const [form, setForm] = useState({ userId: '', period: '', amount: '' })
+    const [form, setForm] = useState({ userId: '', period: '', amount: '', note: '' })
     const [employees, setEmployees] = useState([])
     const [showModal, setShowModal] = useState(false)
     const [role, setRole] = useState('')
@@ -46,31 +45,81 @@ export default function SalaryManager() {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        const res = await fetch('/api/salary', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify(form)
-        })
-        if (res.ok) {
-            fetchSalaries()
-            setShowModal(false)
-            setForm({ userId: '', period: '', amount: '' })
 
-            Swal.fire({
-                icon: 'success',
-                title: 'Salary added!',
-                text: 'The salary record has been successfully added.',
-                timer: 2000,
-                showConfirmButton: false
+        // Validate form
+        if (!form.userId || !form.period || !form.amount || !form.note) {
+            alert('Please fill all required fields!')
+            return
+        }
+
+        // Convert amount to number
+        const payload = {
+            userId: parseInt(form.userId),
+            period: form.period,
+            amount: parseInt(form.amount),
+            note: form.note
+        }
+
+        console.log('Sending payload:', payload)
+
+        try {
+            const res = await fetch('/api/salary', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
             })
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Failed!',
-                text: 'Something went wrong while adding salary.',
-                timer: 2000,
-                showConfirmButton: false
-            })
+
+            const data = await res.json()
+            console.log('Response:', data)
+
+            if (res.ok) {
+                fetchSalaries()
+                setShowModal(false)
+                setForm({ userId: '', period: '', amount: '', note: '' })
+
+                // Sweet Alert success
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Salary added!',
+                        text: 'The salary record has been successfully added.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    })
+                } else {
+                    alert('Salary added successfully!')
+                }
+            } else {
+                // Sweet Alert error
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Failed!',
+                        text: data.message || 'Something went wrong while adding salary.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    })
+                } else {
+                    alert(`Error: ${data.message || 'Failed to add salary!'}`)
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error)
+            // Sweet Alert network error
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Network Error!',
+                    text: 'Network error occurred while processing request.',
+                    timer: 2000,
+                    showConfirmButton: false
+                })
+            } else {
+                alert('Network error occurred!')
+            }
         }
     }
 
@@ -97,6 +146,7 @@ export default function SalaryManager() {
                             <th className="px-4 py-2 text-left">Employee</th>
                             <th className="px-4 py-2 text-left">Period</th>
                             <th className="px-4 py-2 text-left">Amount</th>
+                            <th className="px-4 py-2 text-left">Note</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -106,11 +156,12 @@ export default function SalaryManager() {
                                     <td className="px-4 py-2">{sal.user ? sal.user.name : 'You'}</td>
                                     <td className="px-4 py-2">{sal.period}</td>
                                     <td className="px-4 py-2">Rp {sal.amount.toLocaleString('id-ID')}</td>
+                                    <td className="px-4 py-2">{sal.note || '-'}</td>
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="3" className="px-4 py-2 text-center">No salaries found</td>
+                                <td colSpan="4" className="px-4 py-2 text-center">No salaries found</td>
                             </tr>
                         )}
                     </tbody>
@@ -121,7 +172,7 @@ export default function SalaryManager() {
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
                     <div className="bg-white p-6 rounded shadow max-w-md w-full">
                         <h3 className="text-lg font-bold mb-4">Add Salary</h3>
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-4">
                             <select
                                 value={form.userId}
                                 onChange={(e) => setForm({ ...form, userId: e.target.value })}
@@ -152,6 +203,14 @@ export default function SalaryManager() {
                                 className="w-full border px-3 py-2 rounded"
                                 required
                             />
+                            <input
+                                type="text"
+                                placeholder="Note (Gaji)"
+                                value={form.note}
+                                onChange={(e) => setForm({ ...form, note: e.target.value })}
+                                className="w-full border px-3 py-2 rounded"
+                                required
+                            />
 
                             <div className="flex justify-end space-x-2">
                                 <button
@@ -162,13 +221,14 @@ export default function SalaryManager() {
                                     Cancel
                                 </button>
                                 <button
-                                    type="submit"
+                                    type="button"
+                                    onClick={handleSubmit}
                                     className="px-4 py-2 bg-green-600 text-white rounded"
                                 >
                                     Save
                                 </button>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             )}
