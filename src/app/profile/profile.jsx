@@ -14,7 +14,7 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`${API_BASE}/employee/2`, {
+        const res = await fetch(`${API_BASE}/employee/profile/me`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
